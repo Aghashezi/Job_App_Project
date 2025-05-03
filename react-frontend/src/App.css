@@ -1,0 +1,342 @@
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  background: #f5f7fa;
+  margin: 0;
+  padding: 0;
+}
+
+.main-bg {
+  min-height: 100vh;
+  background: #f5f7fa;
+}
+
+/* Gradient Header */
+.gradient-header {
+  background: linear-gradient(90deg, #1fa2ff 0%, #12d8fa 50%, #a6ffcb 100%);
+  padding-bottom: 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.header-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px 0 40px;
+}
+
+.logo-nav {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  font-size: 1.7rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 1px;
+  gap: 10px;
+}
+
+.logo-icon {
+  font-size: 2.2rem;
+  color: #fff;
+}
+
+.logo-text {
+  color: #fff;
+}
+
+.nav-links a {
+  color: #fff;
+  text-decoration: none;
+  margin-right: 24px;
+  font-weight: 500;
+  font-size: 1.1rem;
+  transition: color 0.2s;
+}
+.nav-links a:last-child { margin-right: 0; }
+.nav-links a:hover { color: #0e5e6f; }
+
+.header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.alert-btn {
+  background: #1abc9c;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 22px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.alert-btn:hover {
+  background: #16a085;
+}
+
+.search-bar-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 32px;
+  gap: 12px;
+}
+
+.main-search-input {
+  width: 480px;
+  max-width: 90vw;
+  padding: 16px 20px;
+  border-radius: 8px 0 0 8px;
+  border: none;
+  font-size: 1.1rem;
+  outline: none;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.main-search-btn {
+  background: #1abc9c;
+  color: #fff;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  padding: 16px 32px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+}
+.main-search-btn:hover {
+  background: #16a085;
+}
+
+/* Main Content Layout */
+.main-content-2col {
+  display: flex;
+  max-width: 1300px;
+  margin: -40px auto 0 auto;
+  padding: 0 24px 40px 24px;
+  gap: 32px;
+}
+
+/* Sidebar Filters */
+.sidebar-filters {
+  width: 270px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  min-width: 220px;
+}
+
+.filter-group {
+  margin-bottom: 8px;
+}
+.filter-title {
+  font-weight: 700;
+  color: #1fa2ff;
+  margin-bottom: 10px;
+  font-size: 1.1rem;
+}
+.filter-list label {
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  margin-bottom: 7px;
+  color: #222;
+  cursor: pointer;
+  gap: 8px;
+}
+.filter-list input[type='checkbox'] {
+  accent-color: #1fa2ff;
+  margin-right: 7px;
+}
+.filter-count {
+  background: #f1f6fb;
+  color: #1fa2ff;
+  border-radius: 8px;
+  font-size: 0.95em;
+  padding: 2px 8px;
+  margin-left: 8px;
+}
+
+/* Job Listings Column */
+.job-listings-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sort-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+.sort-select {
+  padding: 8px 16px;
+  border-radius: 6px;
+  border: 1px solid #e0e0e0;
+  font-size: 1rem;
+  background: #f8f9fa;
+  color: #222;
+  outline: none;
+  margin-left: 8px;
+}
+
+/* Job Card UI */
+.job-card-ui {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+  padding: 22px 28px;
+  margin-bottom: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1.5px solid #f1f6fb;
+  transition: box-shadow 0.2s, border 0.2s;
+}
+.job-card-ui:hover {
+  box-shadow: 0 4px 16px rgba(30,180,220,0.10);
+  border: 1.5px solid #1fa2ff33;
+}
+
+.job-card-header {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.job-logo-placeholder {
+  width: 48px;
+  height: 48px;
+  background: #eaf6ff;
+  color: #1fa2ff;
+  border-radius: 12px;
+  font-size: 1.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.job-card-title-group {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.job-title-ui {
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: #1fa2ff;
+}
+.job-company-ui {
+  font-size: 1rem;
+  color: #222;
+  font-weight: 500;
+  margin-top: 2px;
+}
+.job-badges-ui {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+.badge-ui {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 8px;
+  font-size: 0.95em;
+  font-weight: 600;
+  margin-left: 6px;
+}
+.location-badge {
+  background: #eaf6ff;
+  color: #1fa2ff;
+}
+.new-badge {
+  background: #f9e6f7;
+  color: #e040fb;
+  margin-top: 2px;
+}
+
+.job-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 18px;
+  margin-top: 8px;
+}
+.delete-btn-ui {
+  background: none;
+  border: none;
+  color: #e74c3c;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 5px;
+  transition: color 0.2s;
+}
+.delete-btn-ui:hover {
+  color: #c0392b;
+}
+.job-time-ui {
+  color: #888;
+  font-size: 0.98em;
+}
+
+/* Loading and No Jobs States */
+.loading,
+.no-jobs {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Responsive Design */
+@media (max-width: 1100px) {
+  .main-content-2col {
+    flex-direction: column;
+    gap: 24px;
+  }
+  .sidebar-filters {
+    width: 100%;
+    min-width: unset;
+    flex-direction: row;
+    gap: 24px;
+    padding: 18px 10px;
+    margin-bottom: 18px;
+  }
+}
+@media (max-width: 700px) {
+  .header-inner {
+    flex-direction: column;
+    gap: 18px;
+    padding: 18px 10px 0 10px;
+  }
+  .main-search-input {
+    width: 100%;
+    min-width: 0;
+  }
+  .main-content-2col {
+    padding: 0 4px 20px 4px;
+  }
+  .sidebar-filters {
+    flex-direction: column;
+    gap: 18px;
+    padding: 10px 4px;
+  }
+}

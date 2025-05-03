@@ -1,0 +1,7 @@
+Flask
+Flask-SQLAlchemy
+Flask-CORS
+selenium
+psycopg2-binary  # For PostgreSQL
+# or
+mysqlclient  # For MySQL
