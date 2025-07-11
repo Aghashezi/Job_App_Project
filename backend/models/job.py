@@ -7,3 +7,6 @@ class Job(db.Model):
     title = db.Column(db.String(100), nullable=False)
     company = db.Column(db.String(100), nullable=False)
     location = db.Column(db.String(100), nullable=False)
+    posting_date = db.Column(db.Date, nullable=False)
+    job_type = db.Column(db.String(50), nullable=False)
+    tags = db.Column(db.String(255), nullable=True)

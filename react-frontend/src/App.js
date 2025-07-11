@@ -11,9 +11,18 @@ function App() {
   const [formData, setFormData] = useState({
     title: '',
     company: '',
-    location: ''
+    location: '',
+    posting_date: '',
+    job_type: '',
+    tags: '' // comma-separated string
   });
   const [message, setMessage] = useState('');
+  const [editJobId, setEditJobId] = useState(null);
+  // Filtering state
+  const [filterJobType, setFilterJobType] = useState('');
+  const [filterLocation, setFilterLocation] = useState('');
+  const [filterTag, setFilterTag] = useState('');
+  const [errors, setErrors] = useState({});
 
   // Fetch jobs from the backend
   const fetchJobs = async () => {
@@ -41,18 +50,58 @@ function App() {
     }));
   };
 
-  // Handle form submission
+  // Handle edit button click
+  const handleEdit = (job) => {
+    setEditJobId(job.id);
+    setFormData({
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      posting_date: job.posting_date,
+      job_type: job.job_type,
+      tags: job.tags ? job.tags.join(', ') : ''
+    });
+    setShowAddJob(true);
+  };
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.title) newErrors.title = 'Title is required.';
+    if (!formData.company) newErrors.company = 'Company is required.';
+    if (!formData.location) newErrors.location = 'Location is required.';
+    if (!formData.posting_date) newErrors.posting_date = 'Posting date is required.';
+    if (!formData.job_type) newErrors.job_type = 'Job type is required.';
+    return newErrors;
+  };
+
+  // Handle form submission (add or edit)
   const handleFormSubmit = async (e) => {
     e.preventDefault();
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+    setErrors({});
     try {
-      const response = await axios.post('http://localhost:5000/jobs', formData);
-      setMessage('Job added successfully!');
-      setFormData({ title: '', company: '', location: '' });
-      fetchJobs(); // Refresh the job list
-      setShowAddJob(false); // Hide the form after successful submission
+      const payload = {
+        ...formData,
+        tags: formData.tags.split(',').map(tag => tag.trim()).filter(Boolean)
+      };
+      if (editJobId) {
+        await axios.put(`http://localhost:5000/jobs/${editJobId}`, payload);
+        setMessage('Job updated successfully!');
+      } else {
+        await axios.post('http://localhost:5000/jobs', payload);
+        setMessage('Job added successfully!');
+      }
+      setFormData({ title: '', company: '', location: '', posting_date: '', job_type: '', tags: '' });
+      setEditJobId(null);
+      fetchJobs();
+      setShowAddJob(false);
     } catch (error) {
-      setMessage('Error adding job. Please try again.');
-      console.error('Error adding job:', error);
+      setMessage('Error saving job. Please try again.');
+      console.error('Error saving job:', error);
     }
   };
 
@@ -70,17 +119,31 @@ function App() {
   const filteredJobs = jobs
     .filter((job) => {
       const searchLower = searchTerm.toLowerCase();
-      return (
+      const matchesSearch =
         job.title.toLowerCase().includes(searchLower) ||
         job.company.toLowerCase().includes(searchLower) ||
-        job.location.toLowerCase().includes(searchLower)
-      );
+        job.location.toLowerCase().includes(searchLower);
+      const matchesJobType = filterJobType ? job.job_type === filterJobType : true;
+      const matchesLocation = filterLocation ? job.location === filterLocation : true;
+      const matchesTag = filterTag ? (job.tags && job.tags.includes(filterTag)) : true;
+      return matchesSearch && matchesJobType && matchesLocation && matchesTag;
     })
     .sort((a, b) => {
+      if (sortBy === 'posting_date') {
+        return new Date(b.posting_date) - new Date(a.posting_date);
+      }
       const aValue = a[sortBy].toLowerCase();
       const bValue = b[sortBy].toLowerCase();
       return aValue.localeCompare(bValue);
     });
+
+  // Reset edit state when closing form
+  const handleCloseForm = () => {
+    setShowAddJob(false);
+    setEditJobId(null);
+    setFormData({ title: '', company: '', location: '', posting_date: '', job_type: '', tags: '' });
+    setErrors({}); // Clear errors when closing form
+  };
 
   return (
     <div className="main-bg">
@@ -121,33 +184,33 @@ function App() {
 
       {/* Main Content Layout */}
       <div className="main-content-2col">
-        {/* Sidebar Filters */}
+        {/* Sidebar Filters - make functional */}
         <aside className="sidebar-filters">
-          {/* Country Filter */}
           <div className="filter-group">
-            <div className="filter-title">Country</div>
+            <div className="filter-title">Job Type</div>
             <div className="filter-list">
-              <label><input type="checkbox" checked readOnly /> All countries <span className="filter-count">20</span></label>
-              <label><input type="checkbox" readOnly /> USA <span className="filter-count">12</span></label>
-              <label><input type="checkbox" readOnly /> UK <span className="filter-count">8</span></label>
+              <label><input type="radio" name="jobType" checked={filterJobType === ''} onChange={() => setFilterJobType('')} /> All</label>
+              {[...new Set(jobs.map(j => j.job_type))].filter(Boolean).map((type, idx) => (
+                <label key={idx}><input type="radio" name="jobType" checked={filterJobType === type} onChange={() => setFilterJobType(type)} /> {type}</label>
+              ))}
             </div>
           </div>
-          {/* City Filter */}
           <div className="filter-group">
-            <div className="filter-title">City</div>
+            <div className="filter-title">Location</div>
             <div className="filter-list">
-              <label><input type="checkbox" checked readOnly /> All cities <span className="filter-count">20</span></label>
-              <label><input type="checkbox" readOnly /> London <span className="filter-count">5</span></label>
-              <label><input type="checkbox" readOnly /> Remote <span className="filter-count">3</span></label>
+              <label><input type="radio" name="location" checked={filterLocation === ''} onChange={() => setFilterLocation('')} /> All</label>
+              {[...new Set(jobs.map(j => j.location))].filter(Boolean).map((loc, idx) => (
+                <label key={idx}><input type="radio" name="location" checked={filterLocation === loc} onChange={() => setFilterLocation(loc)} /> {loc}</label>
+              ))}
             </div>
           </div>
-          {/* Experience Filter */}
           <div className="filter-group">
-            <div className="filter-title">Experience</div>
+            <div className="filter-title">Tags</div>
             <div className="filter-list">
-              <label><input type="checkbox" checked readOnly /> All levels <span className="filter-count">20</span></label>
-              <label><input type="checkbox" readOnly /> Intern <span className="filter-count">2</span></label>
-              <label><input type="checkbox" readOnly /> Analyst <span className="filter-count">6</span></label>
+              <label><input type="radio" name="tag" checked={filterTag === ''} onChange={() => setFilterTag('')} /> All</label>
+              {[...new Set(jobs.flatMap(j => j.tags || []))].filter(Boolean).map((tag, idx) => (
+                <label key={idx}><input type="radio" name="tag" checked={filterTag === tag} onChange={() => setFilterTag(tag)} /> {tag}</label>
+              ))}
             </div>
           </div>
         </aside>
@@ -159,7 +222,7 @@ function App() {
               <div className="add-job-header">
                 <h2 className="add-job-title">Add New Job</h2>
                 <button
-                  onClick={() => setShowAddJob(false)}
+                  onClick={handleCloseForm}
                   className="add-job-close"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -168,6 +231,7 @@ function App() {
                 </button>
               </div>
               
+              {/* Add Job Form - show per-field errors */}
               <form onSubmit={handleFormSubmit}>
                 <div className="add-job-form-grid">
                   <div className="add-job-form-group">
@@ -185,6 +249,7 @@ function App() {
                       className="add-job-input"
                       autoComplete="off"
                     />
+                    {errors.title && <div className="add-job-error">{errors.title}</div>}
                   </div>
                   
                   <div className="add-job-form-group">
@@ -202,6 +267,7 @@ function App() {
                       className="add-job-input"
                       autoComplete="off"
                     />
+                    {errors.company && <div className="add-job-error">{errors.company}</div>}
                   </div>
                 </div>
 
@@ -220,6 +286,54 @@ function App() {
                     className="add-job-input"
                     autoComplete="off"
                   />
+                  {errors.location && <div className="add-job-error">{errors.location}</div>}
+                </div>
+                <div className="add-job-form-group">
+                  <label htmlFor="posting_date" className="add-job-label">
+                    Posting Date <span>*</span>
+                  </label>
+                  <input
+                    type="date"
+                    id="posting_date"
+                    name="posting_date"
+                    value={formData.posting_date}
+                    onChange={handleFormChange}
+                    required
+                    className="add-job-input"
+                  />
+                  {errors.posting_date && <div className="add-job-error">{errors.posting_date}</div>}
+                </div>
+                <div className="add-job-form-group">
+                  <label htmlFor="job_type" className="add-job-label">
+                    Job Type <span>*</span>
+                  </label>
+                  <input
+                    type="text"
+                    id="job_type"
+                    name="job_type"
+                    value={formData.job_type}
+                    onChange={handleFormChange}
+                    required
+                    placeholder="e.g., Full-time, Part-time, Contract, Internship"
+                    className="add-job-input"
+                    autoComplete="off"
+                  />
+                  {errors.job_type && <div className="add-job-error">{errors.job_type}</div>}
+                </div>
+                <div className="add-job-form-group">
+                  <label htmlFor="tags" className="add-job-label">
+                    Tags (comma-separated)
+                  </label>
+                  <input
+                    type="text"
+                    id="tags"
+                    name="tags"
+                    value={formData.tags}
+                    onChange={handleFormChange}
+                    placeholder="e.g., Life, Health, Pricing"
+                    className="add-job-input"
+                    autoComplete="off"
+                  />
                 </div>
 
                 <div className="add-job-buttons">
@@ -230,11 +344,11 @@ function App() {
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clipRule="evenodd" />
                     </svg>
-                    Add Job
+                    {editJobId ? 'Update Job' : 'Add Job'}
                   </button>
                   <button
                     type="button"
-                    onClick={() => setShowAddJob(false)}
+                    onClick={handleCloseForm}
                     className="add-job-cancel"
                   >
                     Cancel
@@ -259,6 +373,7 @@ function App() {
             </div>
           ) : (
             <>
+              {/* Sort by posting_date */}
               <div className="sort-row">
                 <select
                   value={sortBy}
@@ -268,6 +383,7 @@ function App() {
                   <option value="title">Sort by Title</option>
                   <option value="company">Sort by Company</option>
                   <option value="location">Sort by Location</option>
+                  <option value="posting_date">Sort by Date Posted (Newest)</option>
                 </select>
               </div>
               {isLoading ? (
@@ -288,6 +404,15 @@ function App() {
                       <div className="job-card-title-group">
                         <div className="job-title-ui">{job.title}</div>
                         <div className="job-company-ui">{job.company}</div>
+                        <div className="job-meta-ui">
+                          <span className="badge-ui job-type-badge">{job.job_type}</span>
+                          <span className="badge-ui posting-date-badge">{job.posting_date}</span>
+                        </div>
+                        <div className="job-tags-ui">
+                          {job.tags && job.tags.map((tag, idx) => (
+                            <span key={idx} className="badge-ui tag-badge">{tag}</span>
+                          ))}
+                        </div>
                       </div>
                       <div className="job-badges-ui">
                         <span className="badge-ui location-badge">{job.location}</span>
@@ -296,7 +421,8 @@ function App() {
                     </div>
                     <div className="job-card-footer">
                       <button className="delete-btn-ui" onClick={() => handleDelete(job.id)} title="Delete job">×</button>
-                      <span className="job-time-ui">6h ago</span>
+                      <button className="edit-btn-ui" onClick={() => handleEdit(job)} title="Edit job">✎</button>
+                      <span className="job-time-ui">{job.posting_date}</span>
                     </div>
                   </div>
                 ))

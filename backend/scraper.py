@@ -8,6 +8,7 @@ from app import Job
 import time, logging, os
 import schedule
 from dotenv import load_dotenv
+from datetime import datetime, date, timedelta
 
 # Load environment variables
 load_dotenv()
@@ -42,6 +43,18 @@ def scrape_jobs():
             EC.presence_of_element_located((By.CLASS_NAME, "Job_job-card__YgDAV"))
         )
 
+        # Handle pagination/infinite scroll (click 'Load more' if present)
+        while True:
+            try:
+                load_more = driver.find_element(By.XPATH, "//button[contains(text(), 'Load more') or contains(text(), 'Show more')]")
+                if load_more.is_displayed():
+                    driver.execute_script("arguments[0].click();", load_more)
+                    time.sleep(2)  # Wait for jobs to load
+                else:
+                    break
+            except Exception:
+                break
+
         # Find job postings
         jobs = driver.find_elements(By.CLASS_NAME, "Job_job-card__YgDAV")
         logging.info(f"Found {len(jobs)} job postings.")
@@ -53,13 +66,43 @@ def scrape_jobs():
                 company = job.find_element(By.CLASS_NAME, "Job_job-card__company__7T9qY").text
                 location = job.find_element(By.CLASS_NAME, "Job_job-card__locations__x1exr").text if job.find_elements(By.CLASS_NAME, "Job_job-card__locations__x1exr") else "Not specified"
 
-                logging.info(f"Scraped: {title}, {company}, {location}")
+                # Extract posting date (if available)
+                posting_date_str = job.find_element(By.CLASS_NAME, "Job_job-card__date__1gkQw").text if job.find_elements(By.CLASS_NAME, "Job_job-card__date__1gkQw") else None
+                posting_date = None
+                if posting_date_str:
+                    # Try to parse relative date like '2 days ago' or '16h ago'
+                    if 'day' in posting_date_str:
+                        days_ago = int(posting_date_str.split()[0])
+                        posting_date = date.today() - timedelta(days=days_ago)
+                    elif 'h' in posting_date_str:
+                        posting_date = date.today()
+                    else:
+                        try:
+                            posting_date = datetime.strptime(posting_date_str, "%Y-%m-%d").date()
+                        except Exception:
+                            posting_date = date.today()
+                else:
+                    posting_date = date.today()
+
+                # Extract job type (if available, else default to 'Full-time')
+                job_type = "Full-time"
+                if job.find_elements(By.CLASS_NAME, "Job_job-card__type__2v2kF"):
+                    job_type = job.find_element(By.CLASS_NAME, "Job_job-card__type__2v2kF").text
+
+                # Extract tags (if available)
+                tags = []
+                if job.find_elements(By.CLASS_NAME, "Job_job-card__tags__2Qd7F"):
+                    tag_elements = job.find_elements(By.CLASS_NAME, "Job_job-card__tags__2Qd7F span")
+                    tags = [t.text for t in tag_elements if t.text]
+                tags_str = ','.join(tags)
+
+                logging.info(f"Scraped: {title}, {company}, {location}, {posting_date}, {job_type}, {tags_str}")
 
                 # Check for duplicates in the database
                 existing_job = session.query(Job).filter_by(title=title, company=company, location=location).first()
                 if not existing_job:
                     # Add new job to the database
-                    new_job = Job(title=title, company=company, location=location)
+                    new_job = Job(title=title, company=company, location=location, posting_date=posting_date, job_type=job_type, tags=tags_str)
                     session.add(new_job)
                     session.commit()
                     logging.info(f"Added job: {title} at {company}")
