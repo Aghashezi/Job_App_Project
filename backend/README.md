@@ -1,65 +1,130 @@
 # Job Application Project - Backend
 
 ## Overview
-This project is a backend application for managing job listings. It includes a Flask API that supports CRUD operations and integrates with a PostgreSQL or MySQL database using SQLAlchemy. Additionally, it features a Selenium bot that automatically scrapes job listings from "https://www.actuarylist.com/" and stores them in the database.
+This is the backend component of the Job Application Project. It provides a Flask REST API that supports CRUD operations for job listings and integrates with a PostgreSQL database using SQLAlchemy. The backend also includes a Selenium bot for automated job scraping functionality.
 
 ## Project Structure
 ```
-job_app_project
-├── backend
-│   ├── scraper.py        # Selenium bot for scraping job listings
-│   ├── app.py            # Flask application entry point
-│   ├── models
-│   │   └── job.py        # Job model definition
-│   ├── config.py         # Configuration settings
-│   ├── requirements.txt   # List of dependencies
-│   └── README.md         # Documentation for the backend project
-├── .env                  # Environment variables
-└── README.md             # Project overview
+backend/
+├── app.py              # Main Flask application with REST API
+├── models/
+│   └── job.py          # Job model definition with SQLAlchemy
+├── config.py           # Configuration settings
+├── requirements.txt     # Python dependencies
+├── scraper.py          # Selenium bot for scraping job listings
+└── templates/
+    └── index.html      # HTML template
 ```
+
+## Features
+
+- **RESTful API** with full CRUD operations for job listings
+- **PostgreSQL database** integration using SQLAlchemy ORM
+- **Advanced filtering and search** capabilities
+- **Pagination** support for large datasets
+- **CORS enabled** for frontend integration
+- **Environment-based configuration**
+- **Selenium-based scraper** for automated job collection
 
 ## Setup Instructions
 
-1. **Clone the Repository**
-   ```
-   git clone <repository-url>
-   cd job_app_project/backend
+### Prerequisites
+- Python 3.7+
+- PostgreSQL database
+- Chrome browser (for scraper functionality)
+
+### Installation
+
+1. **Navigate to the backend directory:**
+   ```bash
+   cd backend
    ```
 
-2. **Create a Virtual Environment**
-   ```
+2. **Create a virtual environment:**
+   ```bash
    python -m venv venv
-   source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+   # On Windows:
+   venv\Scripts\activate
+   # On macOS/Linux:
+   source venv/bin/activate
    ```
 
-3. **Install Dependencies**
-   ```
+3. **Install dependencies:**
+   ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configure the Database**
-   - Update the database connection details in `config.py` to match your PostgreSQL or MySQL setup.
-
-5. **Set Up Environment Variables**
-   - Create a `.env` file in the root directory and add your database credentials and any other sensitive information.
-
-6. **Run the Flask Application**
+4. **Set up environment variables:**
+   Create a `.env` file in the project root directory:
    ```
+   DATABASE_URL=postgresql://username:password@localhost:5432/job_app_db
+   ```
+
+5. **Run the Flask application:**
+   ```bash
    python app.py
    ```
+   The API will be available at `http://localhost:5000`
 
-7. **Run the Scraper**
-   - The scraper will run automatically at specified intervals. Ensure that the Selenium WebDriver is correctly set up.
+## API Endpoints
 
-## Usage
-- **CRUD Operations:**
-  - **GET /jobs**: Fetch all job listings.
-  - **POST /jobs**: Add a new job listing.
-  - **DELETE /jobs/<id>**: Delete a job listing by ID.
+### Job Listings
+- `GET /jobs` - Fetch all job listings with filtering and pagination
+  - Query parameters: `search`, `location`, `job_type`, `tag`, `page`, `limit`, `sort_by`, `order`
+- `POST /jobs` - Add a new job listing
+- `PUT /jobs/<id>` - Update an existing job listing
+- `DELETE /jobs/<id>` - Delete a job listing
 
-## Logging
-- The scraper logs execution details to `scraper.log`. Check this file for any errors or information regarding the scraping process.
+### Example API Usage
+```bash
+# Get all jobs
+curl http://localhost:5000/jobs
+
+# Search for jobs
+curl "http://localhost:5000/jobs?search=developer&location=remote"
+
+# Add a new job
+curl -X POST http://localhost:5000/jobs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Software Engineer",
+    "company": "Tech Corp",
+    "location": "San Francisco, CA",
+    "posting_date": "2024-01-15",
+    "job_type": "Full-time",
+    "tags": ["Python", "React", "AWS"]
+  }'
+```
+
+## Database Schema
+
+The `Job` model includes the following fields:
+- `id` (Primary Key)
+- `title` (String)
+- `company` (String)
+- `location` (String)
+- `posting_date` (Date)
+- `job_type` (String)
+- `tags` (String, comma-separated)
+
+## Scraper Functionality
+
+The project includes a Selenium-based scraper (`scraper.py`) for automated job listing collection from external sources. The scraper logs execution details to `scraper.log`.
+
+## Development
+
+### Running the Backend
+```bash
+cd backend
+python app.py
+```
+
+### Database Setup
+Ensure PostgreSQL is running and the database is created before starting the backend. The application will automatically create the necessary tables on startup.
 
 ## Notes
-- Ensure that you have the necessary permissions and comply with the terms of service of the website you are scraping.
-- Modify the scraping logic in `scraper.py` as needed to accommodate changes in the website structure.
+
+- Ensure PostgreSQL is running and the database is created before starting the backend
+- CORS is enabled to allow frontend requests from `http://localhost:3000`
+- Environment variables should be properly configured for production deployment
+- The scraper requires Chrome browser and appropriate ChromeDriver installation
