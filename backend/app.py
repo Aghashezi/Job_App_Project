@@ -1,24 +1,20 @@
 from flask import Flask, request, jsonify, render_template
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import os
+from dotenv import load_dotenv
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
-app = Flask(__name__, template_folder="templates")  # Specify the templates folder
+# Import db and Job from models/job.py
+from models.job import db, Job
+
+app = Flask(__name__, template_folder="templates")
 CORS(app)
 
 # Use PostgreSQL connection string from .env
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'postgresql://postgres:newpassword@localhost:5432/job_app_db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-db = SQLAlchemy(app)
 
-class Job(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(100), nullable=False)
-    company = db.Column(db.String(100), nullable=False)
-    location = db.Column(db.String(100), nullable=False)
-    posting_date = db.Column(db.Date, nullable=False)
-    job_type = db.Column(db.String(50), nullable=False)
-    tags = db.Column(db.String(255), nullable=True)
+db.init_app(app)
 
 # Initialize the database tables manually
 with app.app_context():
