@@ -29,15 +29,21 @@ def home():
 def get_jobs():
     sort_by = request.args.get('sort_by', 'posting_date')
     order = request.args.get('order', 'desc')
-    filter_by_company = request.args.get('company')
+    search = request.args.get('search')
     filter_by_location = request.args.get('location')
     filter_by_job_type = request.args.get('job_type')
     filter_by_tag = request.args.get('tag')
+    page = int(request.args.get('page', 1))
+    limit = int(request.args.get('limit', 20))
 
     query = Job.query
 
-    if filter_by_company:
-        query = query.filter(Job.company.ilike(f"%{filter_by_company}%"))
+    # Search by title or company
+    if search:
+        query = query.filter(
+            db.or_(Job.company.ilike(f"%{search}%"), Job.title.ilike(f"%{search}%"))
+        )
+
     if filter_by_location:
         query = query.filter(Job.location.ilike(f"%{filter_by_location}%"))
     if filter_by_job_type:
@@ -50,18 +56,29 @@ def get_jobs():
     else:
         query = query.order_by(getattr(Job, sort_by))
 
-    jobs = query.all()
-    return jsonify([
-        {
-            "id": j.id,
-            "title": j.title,
-            "company": j.company,
-            "location": j.location,
-            "posting_date": j.posting_date.isoformat(),
-            "job_type": j.job_type,
-            "tags": j.tags.split(',') if j.tags else []
-        } for j in jobs
-    ])
+    total_jobs = query.count()
+    jobs = query.offset((page - 1) * limit).limit(limit).all()
+    total_pages = (total_jobs + limit - 1) // limit
+
+    return jsonify({
+        "jobs": [
+            {
+                "id": j.id,
+                "title": j.title,
+                "company": j.company,
+                "location": j.location,
+                "posting_date": j.posting_date.isoformat(),
+                "job_type": j.job_type,
+                "tags": j.tags.split(',') if j.tags else []
+            } for j in jobs
+        ],
+        "pagination": {
+            "total_jobs": total_jobs,
+            "total_pages": total_pages,
+            "current_page": page,
+            "limit": limit
+        }
+    })
 
 @app.route("/jobs", methods=["POST"])
 def add_job():

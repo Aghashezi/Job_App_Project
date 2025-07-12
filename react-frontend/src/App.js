@@ -23,13 +23,26 @@ function App() {
   const [filterLocation, setFilterLocation] = useState('');
   const [filterTag, setFilterTag] = useState('');
   const [errors, setErrors] = useState({});
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [limit] = useState(20);
 
   // Fetch jobs from the backend
-  const fetchJobs = async () => {
+  const fetchJobs = async (page = 1, search = searchTerm, jobType = filterJobType, location = filterLocation, tag = filterTag) => {
     try {
       setIsLoading(true);
-      const res = await axios.get('http://localhost:5000/jobs');
-      setJobs(res.data);
+      const params = {
+        page,
+        limit,
+        ...(search && { search }),
+        ...(jobType && { job_type: jobType }),
+        ...(location && { location }),
+        ...(tag && { tag })
+      };
+      const res = await axios.get('http://localhost:5000/jobs', { params });
+      setJobs(res.data.jobs);
+      setCurrentPage(res.data.pagination.current_page);
+      setTotalPages(res.data.pagination.total_pages);
     } catch (error) {
       console.error('Error fetching jobs:', error);
     } finally {
@@ -38,8 +51,9 @@ function App() {
   };
 
   useEffect(() => {
-    fetchJobs();
-  }, []);
+    fetchJobs(currentPage, searchTerm, filterJobType, filterLocation, filterTag);
+    // eslint-disable-next-line
+  }, [currentPage, searchTerm, filterJobType, filterLocation, filterTag]);
 
   // Handle form input changes
   const handleFormChange = (e) => {
@@ -107,6 +121,7 @@ function App() {
 
   // Delete a job
   const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this job?')) return;
     try {
       await axios.delete(`http://localhost:5000/jobs/${id}`);
       fetchJobs();
@@ -116,26 +131,7 @@ function App() {
   };
 
   // Filter and sort jobs
-  const filteredJobs = jobs
-    .filter((job) => {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch =
-        job.title.toLowerCase().includes(searchLower) ||
-        job.company.toLowerCase().includes(searchLower) ||
-        job.location.toLowerCase().includes(searchLower);
-      const matchesJobType = filterJobType ? job.job_type === filterJobType : true;
-      const matchesLocation = filterLocation ? job.location === filterLocation : true;
-      const matchesTag = filterTag ? (job.tags && job.tags.includes(filterTag)) : true;
-      return matchesSearch && matchesJobType && matchesLocation && matchesTag;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'posting_date') {
-        return new Date(b.posting_date) - new Date(a.posting_date);
-      }
-      const aValue = a[sortBy].toLowerCase();
-      const bValue = b[sortBy].toLowerCase();
-      return aValue.localeCompare(bValue);
-    });
+  const filteredJobs = jobs;
 
   // Reset edit state when closing form
   const handleCloseForm = () => {
@@ -143,6 +139,13 @@ function App() {
     setEditJobId(null);
     setFormData({ title: '', company: '', location: '', posting_date: '', job_type: '', tags: '' });
     setErrors({}); // Clear errors when closing form
+  };
+
+  // Pagination controls
+  const handlePageChange = (page) => {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      setCurrentPage(page);
+    }
   };
 
   return (
@@ -176,7 +179,10 @@ function App() {
             className="main-search-input"
             placeholder="Enter Keyword or Job Title or Location"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
           />
           <button className="main-search-btn">Search Jobs</button>
         </div>
@@ -189,27 +195,27 @@ function App() {
           <div className="filter-group">
             <div className="filter-title">Job Type</div>
             <div className="filter-list">
-              <label><input type="radio" name="jobType" checked={filterJobType === ''} onChange={() => setFilterJobType('')} /> All</label>
+              <label><input type="radio" name="jobType" checked={filterJobType === ''} onChange={() => { setFilterJobType(''); setCurrentPage(1); }} /> All</label>
               {[...new Set(jobs.map(j => j.job_type))].filter(Boolean).map((type, idx) => (
-                <label key={idx}><input type="radio" name="jobType" checked={filterJobType === type} onChange={() => setFilterJobType(type)} /> {type}</label>
+                <label key={idx}><input type="radio" name="jobType" checked={filterJobType === type} onChange={() => { setFilterJobType(type); setCurrentPage(1); }} /> {type}</label>
               ))}
             </div>
           </div>
           <div className="filter-group">
             <div className="filter-title">Location</div>
             <div className="filter-list">
-              <label><input type="radio" name="location" checked={filterLocation === ''} onChange={() => setFilterLocation('')} /> All</label>
+              <label><input type="radio" name="location" checked={filterLocation === ''} onChange={() => { setFilterLocation(''); setCurrentPage(1); }} /> All</label>
               {[...new Set(jobs.map(j => j.location))].filter(Boolean).map((loc, idx) => (
-                <label key={idx}><input type="radio" name="location" checked={filterLocation === loc} onChange={() => setFilterLocation(loc)} /> {loc}</label>
+                <label key={idx}><input type="radio" name="location" checked={filterLocation === loc} onChange={() => { setFilterLocation(loc); setCurrentPage(1); }} /> {loc}</label>
               ))}
             </div>
           </div>
           <div className="filter-group">
             <div className="filter-title">Tags</div>
             <div className="filter-list">
-              <label><input type="radio" name="tag" checked={filterTag === ''} onChange={() => setFilterTag('')} /> All</label>
+              <label><input type="radio" name="tag" checked={filterTag === ''} onChange={() => { setFilterTag(''); setCurrentPage(1); }} /> All</label>
               {[...new Set(jobs.flatMap(j => j.tags || []))].filter(Boolean).map((tag, idx) => (
-                <label key={idx}><input type="radio" name="tag" checked={filterTag === tag} onChange={() => setFilterTag(tag)} /> {tag}</label>
+                <label key={idx}><input type="radio" name="tag" checked={filterTag === tag} onChange={() => { setFilterTag(tag); setCurrentPage(1); }} /> {tag}</label>
               ))}
             </div>
           </div>
@@ -397,35 +403,58 @@ function App() {
                   )}
                 </div>
               ) : (
-                filteredJobs.map((job) => (
-                  <div key={job.id} className="job-card-ui">
-                    <div className="job-card-header">
-                      <div className="job-logo-placeholder">{job.company[0]}</div>
-                      <div className="job-card-title-group">
-                        <div className="job-title-ui">{job.title}</div>
-                        <div className="job-company-ui">{job.company}</div>
-                        <div className="job-meta-ui">
-                          <span className="badge-ui job-type-badge">{job.job_type}</span>
-                          <span className="badge-ui posting-date-badge">{job.posting_date}</span>
+                <>
+                  {filteredJobs.map((job) => (
+                    <div key={job.id} className="job-card-ui">
+                      <div className="job-card-header">
+                        <div className="job-logo-placeholder">{job.company[0]}</div>
+                        <div className="job-card-title-group">
+                          <div className="job-title-ui">{job.title}</div>
+                          <div className="job-company-ui">{job.company}</div>
+                          <div className="job-meta-ui">
+                            <span className="badge-ui job-type-badge">{job.job_type}</span>
+                            <span className="badge-ui posting-date-badge">{job.posting_date}</span>
+                          </div>
+                          <div className="job-tags-ui">
+                            {job.tags && job.tags.map((tag, idx) => (
+                              <span key={idx} className="badge-ui tag-badge">{tag}</span>
+                            ))}
+                          </div>
                         </div>
-                        <div className="job-tags-ui">
-                          {job.tags && job.tags.map((tag, idx) => (
-                            <span key={idx} className="badge-ui tag-badge">{tag}</span>
-                          ))}
+                        <div className="job-badges-ui">
+                          <span className="badge-ui location-badge">{job.location}</span>
+                          <span className="badge-ui new-badge">new</span>
                         </div>
                       </div>
-                      <div className="job-badges-ui">
-                        <span className="badge-ui location-badge">{job.location}</span>
-                        <span className="badge-ui new-badge">new</span>
+                      <div className="job-card-footer">
+                        <button className="edit-btn-ui" onClick={() => handleEdit(job)} title="Edit job" aria-label="Edit job">
+                          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M4 13.5V16H6.5L14.873 7.627a1 1 0 0 0 0-1.414l-2.086-2.086a1 1 0 0 0-1.414 0L4 12.086V13.5z" stroke="#6c63ff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                        <button className="delete-btn-ui" onClick={() => handleDelete(job.id)} title="Delete job" aria-label="Delete job">
+                          <svg width="18" height="18" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M6 8v6m4-6v6m4-10v2M4 6h12M5 6v10a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V6" stroke="#ff4d4f" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                        <span className="job-time-ui">{job.posting_date}</span>
                       </div>
                     </div>
-                    <div className="job-card-footer">
-                      <button className="delete-btn-ui" onClick={() => handleDelete(job.id)} title="Delete job">×</button>
-                      <button className="edit-btn-ui" onClick={() => handleEdit(job)} title="Edit job">✎</button>
-                      <span className="job-time-ui">{job.posting_date}</span>
-                    </div>
+                  ))}
+                  <div className="pagination-controls">
+                    <button className="pagination-btn" onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>Previous</button>
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button
+                        key={i + 1}
+                        onClick={() => handlePageChange(i + 1)}
+                        className={`pagination-btn${currentPage === i + 1 ? ' active' : ''}`}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button className="pagination-btn" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}>Next</button>
                   </div>
-                ))
+                </>
               )}
             </>
           )}
